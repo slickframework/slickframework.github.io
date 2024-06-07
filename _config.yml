@@ -33,7 +33,6 @@ github_username:  silvamfilipe
 # Build settings
 theme: minima
 remote_theme: chrisrhymes/bulma-clean-theme@v0.14.0
-theme_color: '#0054a6'
 plugins:
   - jekyll-feed
 
