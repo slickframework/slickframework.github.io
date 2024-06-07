@@ -1,0 +1,12 @@
+style: is-light
+height: is-medium
+items:
+  - title: Easy to integrate
+    icon: fa-cog
+    description: It is low on dependencies an can be easily installed with composer on other projects. 
+  - title: Extensible
+    icon: fa-wrench
+    description: All the ideas behind the packages are represented in interfaces. You can implement what's missing.
+  - title: Modular
+    icon: fa-cubes
+    description: Created with packages that can be used separately. If you need a dependency container just use Slick\Di
