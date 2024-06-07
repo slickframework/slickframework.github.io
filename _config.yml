@@ -25,7 +25,7 @@ description: >
    It offers a router, a dispatcher and view mechanism that returns PSR-7 Responses for HTTP Requests (usually through a web server).
    You can change (add or remove) the HTTP stack by adding your own middleware making this library very flexible and suitable for almost any HTTP handling needs.
 
-baseurl: "/slickframework.github.io/" # the subpath of your site, e.g. /blog
+baseurl: "/" # the subpath of your site, e.g. /blog
 url: "https://slickframework.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: silvam_filipe
 github_username:  silvamfilipe
