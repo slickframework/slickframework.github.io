@@ -4,12 +4,12 @@
 
 layout: page
 hero_image: /assets/img/hi-tech-concepts-on-blue-background-hero-header.jpg
-title: Slick documentation
-hero_link: /getting_started/
+title: Slick
+hero_link: /getting_started.html
 hero_link_text: Getting Started
 hero_darken: true
 show_sidebar: true
-subtitle: Slick is a set of libraries that tries to abstract common features of application development with PHP.
+subtitle: Streamlining PHP Application Development with PSR-15 Handlers and Modern Development Practices
 callouts: home_callouts
 ---
 

@@ -2,6 +2,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="{{ site.theme_color | default: '#ffffff' }}">
+    <link rel="stylesheet" href="/assets/css/prism.css">
     <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/app.css">
     <link
         rel="shortcut icon"
@@ -20,6 +21,12 @@
     {% unless site.hide_share_buttons %}
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma-social@1/bin/bulma-social.min.css">
     {% endunless %}
+
+    <script src="/assets/js/prism.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script src="/assets/js/sticky-sidebar.js"></script>
+
     {% seo %}
     {% if site.feed %}
         {% feed_meta %}

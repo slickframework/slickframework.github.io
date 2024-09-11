@@ -35,6 +35,7 @@ theme: minima
 remote_theme: chrisrhymes/bulma-clean-theme@v0.14.0
 plugins:
   - jekyll-feed
+branch: V2
 
 # Exclude from processing.
 # The following items will not be processed, by default.

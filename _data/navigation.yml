@@ -1,0 +1,23 @@
+- name: Documentation
+  link: /documentation/getting-started/
+  dropdown:
+    - name: Getting started
+      link: /documentation/getting-started/
+    - name: Modules System
+      link: /documentation/modules.html  
+    - name: Configuration management
+      link: /documentation/configuration.html  
+    - name: Dependency injection container
+      link: /documentation/dependency-injection.html
+    - name: Authentication & authorization
+      link: /documentation/security/authentication.html
+- name: Modules
+  link: /modules/module-api.html
+  dropdown:
+    - name: Module API
+      link: /modules/module-api.html
+    - name: ORM (doctrine)
+      link: /modules/orm.html
+    - name: Template engine
+      link: /modules/template.html  
+    

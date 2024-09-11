@@ -1,0 +1,25 @@
+{% assign icon = "info" %}
+{% case include.type %}
+{% when "info" %}
+    {% assign icon = "graduation-cap" %}
+{% when "warning" %}
+    {% assign icon = "exclamation" %}
+{% when "danger" %}
+    {% assign icon = "exclamation-triangle" %}         
+{% endcase %}
+{% assign type = include.type %}
+{% unless include.type %}
+    {% assign type = "dark" %}
+{% endunless %}
+
+<div class="message is-{{ type }}">
+    <div class="message-body">
+        <span class="icon is-large">
+            <span class="fa-stack fa-lg">
+                <i class="fas fa-square fa-stack-2x"></i>
+                <i class="fas fa-{{ icon }} fa-stack-1x fa-inverse"></i>
+            </span>
+        </span>
+        <span>{{ include.content | markdownify }}</span>
+    </div>
+</div>

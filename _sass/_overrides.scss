@@ -100,3 +100,124 @@
     color: $primary;
     background-color: $pagination-background-color;
   }
+
+  .contents {
+    box-shadow: none;
+  }
+  code {
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    .token {
+      .attr-name {
+        padding-left: 0.75em;
+      }
+      .number {
+        font-size: 1em;
+        height: inherit;
+        margin-right: 0;
+        min-width: auto;
+        padding: 0;
+      }
+      &.tag {
+        font-size: 1em;
+        padding: 0;
+      }
+    }
+  }
+
+  .language-shell {
+    .code-toolbar::before {
+      background-color: rgba(255, 255, 255, .3);
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, .3), 20px 0 0 2px rgba(255, 255, 255, .3), 40px 0 0 2px rgba(255, 255, 255, .3);
+      content: '';
+      display: block;
+      height: 7px;
+      left: 8px;
+      position: absolute;
+      top: -18px;
+      width: 7px;
+    }
+    .code-toolbar {
+      background: #1f2937;
+      border: solid #4b5563;
+      border-width: 30px 4px 4px;
+      border-radius: 4px 4px 0 0;
+      padding: 5px 0 0;
+      position: relative;
+      width: 100%;
+      pre::before{
+        color: #fff;
+        content: '$ ';
+      }
+       pre {
+        padding: 0.3em 1.5em;
+        background-color: #1f2937;
+        code.language-shell {
+          color: #fff;
+          font-weight: 300;
+          text-shadow: none;
+        }
+      }
+    }
+    code {
+      &.language-shell {
+        .number {
+          color: orangered;
+          background-color: inherit;
+          font-size: 1rem;
+          margin-right: 0;
+          min-width: auto;
+          padding: 0;
+          vertical-align: inherit;
+        }
+      }
+    }
+  }
+
+  div.code-toolbar>.toolbar>.toolbar-item>button {
+    position: absolute;
+    background-color: #6D5CAE;
+    border-radius: 2px;
+    border: none;
+    padding: 5px 10px;
+    top: 12px;
+    right: 13px;
+    cursor: pointer;
+    span {
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+      &:hover {
+        color: #fff;
+      }
+    }
+  }
+
+  .message {
+    .message-body {
+      padding: 1.1em 1.25em 1.25em 4.5em;
+      position: relative;
+      .icon {
+        position: absolute;
+        top: 0.35em;
+        left: 0.35em;
+      }
+    }
+  }
+
+  code.language-php {
+    .number {
+      padding: 0;
+      font-size: 1em;
+      height: auto;
+      margin-right: 0;
+      min-width: 0;
+    }
+  }
+
+  .highlight .console-output {
+      background-color: #141414;
+      padding: 16px 16px 3px 16px;
+  }
+  
