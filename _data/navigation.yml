@@ -1,8 +1,8 @@
 - name: Documentation
-  link: /documentation/getting-started/
+  link: /documentation/getting-started.html
   dropdown:
     - name: Getting started
-      link: /documentation/getting-started/
+      link: /documentation/getting-started.html
     - name: Modules System
       link: /documentation/modules.html  
     - name: Configuration management
@@ -19,5 +19,7 @@
     - name: ORM (doctrine)
       link: /modules/orm.html
     - name: Template engine
-      link: /modules/template.html  
+      link: /modules/template.html
+- name: Blog
+  link: /blog/  
     

@@ -5,7 +5,7 @@
 layout: page
 hero_image: /assets/img/hi-tech-concepts-on-blue-background-hero-header.jpg
 title: Slick
-hero_link: /getting_started.html
+hero_link: /documentation/getting-started.html
 hero_link_text: Getting Started
 hero_darken: true
 show_sidebar: true
@@ -13,12 +13,21 @@ subtitle: Streamlining PHP Application Development with PSR-15 Handlers and Mode
 callouts: home_callouts
 ---
 
-## What is Slick?
----
-A Slick application consists of a [PSR-15](https://www.php-fig.org/psr/psr-15/) HTTP middleware stack that can help you create web applications or web services for HTTP protocol.
+### **Getting Started with Slick**
 
-It offers a router, security and a dispatcher that returns [PSR-7](https://www.php-fig.org/psr/psr-7/) Responses for HTTP Requests (usually through a web server).
+Slick is a PSR-15 compliant HTTP middleware framework designed for building web applications and services that communicate over the HTTP protocol. At its core, Slick provides a robust middleware stack, a powerful router, security features, and a dispatcher that produces PSR-7 compliant responses to incoming HTTP requests, usually routed through a web server.
 
-You can change (add or remove) the HTTP stack by adding your own middleware making
-this library very flexible and suitable for almost any HTTP handling needs.
+#### **Why Use HTTP Middleware?**
+
+One of the main advantages of using Slick’s HTTP middleware is its flexibility. The middleware stack can be easily customized by adding, removing, or reordering middleware components, allowing you to tailor the HTTP request handling to meet your specific needs. This adaptability makes Slick an ideal choice for a wide range of HTTP handling scenarios, from simple applications to complex services.
+
+#### **Modular Architecture**
+
+Slick is built with modularity in mind. Most of its features are implemented as separate modules, offering a high degree of customization:
+- **Core Modules**: Some modules are enabled by default and are essential for Slick’s operation. These cannot be disabled.
+- **Optional Modules**: Additional modules can be enabled as needed. Activating these modules will automatically configure their dependencies, set up relevant components in the dependency container, register console commands, include necessary HTTP middlewares, and adjust default settings.
+
+This modular approach ensures that you can keep your application lean by only including the components you need, while still having access to a rich set of features to extend the functionality of your application when required.
+
+Whether you're starting a new project or integrating Slick into an existing application, its middleware-centric and modular design provides a flexible and efficient foundation for building robust HTTP-based applications and services.
 

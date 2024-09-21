@@ -4,8 +4,10 @@ title:  "How to create a Slick module"
 date:   2024-07-02 10:30:00 +0000
 categories: howtos
 author: Filipe Silva
-hero_image: /assets/img/hi-tech-concepts-on-blue-background-hero-header.jpg
+hero_image: /assets/img/browser-bar.png
+hero_darken: true
 menubar_toc: true
+image: /assets/img/browser-bar.png
 ---
 
 A module is typically a package or library that provides specific functionality. You can develop a module if you want to add some kind of functionality to your application and you planned to reuse this module in other aplications.

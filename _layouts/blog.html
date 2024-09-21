@@ -1,0 +1,21 @@
+---
+layout: default
+---
+{{ content }}
+
+<div class="tile is-ancestor">
+    {% for post in site.posts %}
+        <div class="tile is-parent">
+            {% include post-card.html %}
+        </div>
+    {% endfor %}
+</div>
+
+<div class="columns is-multiline">
+    <div class="column is-12">
+        {% include pagination.html %}
+    </div>
+    <div class="column is-12">
+        {% include subscribe.html %}
+    </div>
+</div>

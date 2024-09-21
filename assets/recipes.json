@@ -1,0 +1,92 @@
+[
+  {
+    "name": "Spaghetti Aglio e Olio",
+    "ingredients": ["Spaghetti", "olive oil", "garlic", "red pepper flakes", "parsley", "salt", "black pepper"],
+    "instructions": "Cook spaghetti. In a pan, sauté garlic in olive oil until golden. Add red pepper flakes, cooked pasta, and parsley. Toss and serve.",
+    "image": "/assets/recipe/0.jpg"
+  },
+  {
+    "name": "Caprese Salad",
+    "ingredients": ["Tomatoes", "fresh mozzarella", "basil", "olive oil", "balsamic vinegar", "salt", "black pepper"],
+    "instructions": "Slice tomatoes and mozzarella. Arrange on a plate, alternating slices. Top with basil, drizzle with olive oil and balsamic vinegar, and season with salt and pepper.",
+    "image": "/assets/recipe/1.jpg"
+  },
+  {
+    "name": "Vegetable Stir-Fry",
+    "ingredients": ["Broccoli", "bell pepper", "carrots", "snow peas", "soy sauce", "garlic", "ginger", "olive oil"],
+    "instructions": "Sauté garlic and ginger in olive oil. Add vegetables and stir-fry until tender. Add soy sauce, cook for another minute, and serve hot.",
+    "image": "/assets/recipe/2.jpg"
+  },
+  {
+    "name": "Chicken Quesadilla",
+    "ingredients": ["Flour tortillas", "cooked chicken", "shredded cheese", "bell pepper", "onion", "salsa"],
+    "instructions": "On a tortilla, layer chicken, cheese, bell pepper, and onion. Top with another tortilla. Cook in a skillet until cheese is melted and tortillas are golden. Serve with salsa.",
+    "image": "/assets/recipe/3.jpg"
+  },
+  {
+    "name": "Garlic Butter Shrimp",
+    "ingredients": ["Shrimp", "garlic", "butter", "lemon juice", "parsley", "salt", "black pepper"],
+    "instructions": "Sauté garlic in butter until fragrant. Add shrimp, lemon juice, salt, and pepper. Cook until shrimp is pink. Garnish with parsley.",
+    "image": "/assets/recipe/4.jpg"
+  },
+  {
+    "name": "Pancakes",
+    "ingredients": ["Flour", "milk", "eggs", "sugar", "baking powder", "butter", "salt"],
+    "instructions": "Mix flour, sugar, baking powder, and salt. Add milk, eggs, and melted butter. Stir until smooth. Cook on a griddle until bubbles form, then flip and cook until golden.",
+    "image": "/assets/recipe/5.jpg"
+  },
+  {
+    "name": "Tomato Soup",
+    "ingredients": ["Tomatoes", "onion", "garlic", "vegetable broth", "olive oil", "basil", "salt", "black pepper"],
+    "instructions": "Sauté onion and garlic in olive oil. Add tomatoes and broth. Simmer until tomatoes are soft. Blend until smooth and season with salt, pepper, and basil.",
+    "image": "/assets/recipe/6.jpg"
+  },
+  {
+    "name": "Guacamole",
+    "ingredients": ["Avocado", "lime juice", "onion", "cilantro", "jalapeño", "salt"],
+    "instructions": "Mash avocados and mix with lime juice, chopped onion, cilantro, jalapeño, and salt.",
+    "image": "/assets/recipe/7.jpg"
+  },
+  {
+    "name": "French Toast",
+    "ingredients": ["Bread", "eggs", "milk", "cinnamon", "vanilla extract", "butter", "syrup"],
+    "instructions": "Whisk eggs, milk, cinnamon, and vanilla. Dip bread slices into the mixture and cook in butter on a skillet until golden on both sides. Serve with syrup.",
+    "image": "/assets/recipe/8.jpg"
+  },
+  {
+    "name": "Greek Salad",
+    "ingredients": ["Cucumber", "tomatoes", "red onion", "olives", "feta cheese", "olive oil", "oregano", "salt", "black pepper"],
+    "instructions": "Chop vegetables and mix with olives and feta. Drizzle with olive oil, sprinkle with oregano, and season with salt and pepper.",
+    "image": "/assets/recipe/9.jpg"
+  },
+  {
+    "name": "Bruschetta",
+    "ingredients": ["Baguette", "tomatoes", "garlic", "basil", "olive oil", "balsamic vinegar", "salt", "black pepper"],
+    "instructions": "Toast baguette slices. Mix diced tomatoes, minced garlic, basil, olive oil, and balsamic vinegar. Spoon the mixture onto the toasted baguette slices.",
+    "image": "/assets/recipe/10.jpg"
+  },
+  {
+    "name": "Chocolate Chip Cookies",
+    "ingredients": ["Flour", "butter", "sugar", "brown sugar", "eggs", "vanilla extract", "baking soda", "salt", "chocolate chips"],
+    "instructions": "Cream butter and sugars. Add eggs and vanilla. Mix in flour, baking soda, and salt. Stir in chocolate chips. Scoop onto a baking sheet and bake.",
+    "image": "/assets/recipe/11.jpg"
+  },
+  {
+    "name": "Caesar Salad",
+    "ingredients": ["Romaine lettuce", "croutons", "Parmesan cheese", "Caesar dressing"],
+    "instructions": "Toss chopped romaine with croutons and grated Parmesan. Drizzle with Caesar dressing and serve.",
+    "image": "/assets/recipe/12.jpg"
+  },
+  {
+    "name": "Margarita Pizza",
+    "ingredients": ["Pizza dough", "tomato sauce", "mozzarella cheese", "basil", "olive oil"],
+    "instructions": "Spread tomato sauce on pizza dough, top with mozzarella and basil leaves. Drizzle with olive oil and bake until crust is golden.",
+    "image": "/assets/recipe/13.jpg"
+  },
+  {
+    "name": "Fruit Smoothie",
+    "ingredients": ["Banana", "strawberries", "yogurt", "honey", "ice"],
+    "instructions": "Blend banana, strawberries, yogurt, honey, and ice until smooth. Serve chilled.",
+    "image": "/assets/recipe/14.jpg"
+  }
+]
