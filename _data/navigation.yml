@@ -20,6 +20,8 @@
       link: /modules/orm.html
     - name: Template engine
       link: /modules/template.html
+    - name: JSON API
+      link: /modules/json-api.html      
 - name: Blog
   link: /blog/  
     
