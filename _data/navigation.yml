@@ -21,7 +21,9 @@
     - name: Template engine
       link: /modules/template.html
     - name: JSON API
-      link: /modules/json-api.html      
+      link: /modules/json-api.html
+    - name: AMQP Messageing
+      link: /modules/amqp.html   
 - name: Blog
   link: /blog/  
     
