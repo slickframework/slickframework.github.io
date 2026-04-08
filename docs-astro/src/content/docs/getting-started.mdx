@@ -1,0 +1,153 @@
+---
+title: Getting started
+description: Install Slick and have a working HTTP endpoint in under five minutes.
+sidebar:
+  order: 1
+---
+
+Slick is a PSR-15 HTTP middleware framework for PHP 8.3+. It has no proprietary abstractions — every request is a `ServerRequestInterface`, every response is a `ResponseInterface`, and every feature is an opt-in module.
+
+This guide goes from zero to a working route in under five minutes.
+
+## Requirements
+
+- PHP 8.3 or higher
+- [Composer](https://getcomposer.org/)
+
+## Setup
+
+**1. Create a new project**
+
+For a web application with Twig templates:
+
+```bash
+composer create-project slick/webapp ./my-project
+```
+
+For a JSON API service:
+
+```bash
+composer create-project slick/webservice ./my-api
+```
+
+**2. Start the development server**
+
+```bash
+cd my-project
+php -S localhost:8000 -t webroot
+```
+
+Open `http://localhost:8000` — you should see the Slick welcome page.
+
+**3. Define your first route**
+
+Create a controller in `src/UserInterface/`:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\UserInterface;
+
+use Psr\Http\Message\ResponseInterface;
+use Symfony\Component\Routing\Attribute\Route;
+
+final class HomeController
+{
+    #[Route('/', name: 'home', methods: ['GET'])]
+    public function index(): ResponseInterface
+    {
+        // render or return a response
+    }
+}
+```
+
+Routes are PHP 8 attributes on controller methods — no route files, no configuration.
+
+## How routing works
+
+The `#[Route]` attribute maps a URL pattern to a controller method. Dynamic segments are wrapped in `{ }`:
+
+```php
+#[Route('/articles/{slug}', name: 'article_show', methods: ['GET'])]
+public function show(string $slug): ResponseInterface
+{
+    // $slug is injected automatically
+}
+```
+
+Optional parameters get a default value in the method signature:
+
+```php
+#[Route('/articles/page/{page}', name: 'article_list')]
+public function list(int $page = 1): ResponseInterface
+{
+    // page defaults to 1 if not in the URL
+}
+```
+
+:::tip
+Query strings are never considered when matching routes. `/articles?foo=bar` matches the same route as `/articles`.
+:::
+
+## Debugging routes
+
+```bash
+bin/console debug:router                                    # list all routes
+bin/console debug:router article_show                       # details of a named route
+bin/console router:match /articles/my-post --method GET    # which route matches
+```
+
+## Working with the request
+
+Declare `ServerRequestInterface` as a method parameter and Slick injects it automatically:
+
+```php
+#[Route('/search', name: 'search')]
+public function search(ServerRequestInterface $request): ResponseInterface
+{
+    $query = $request->getQueryParams()['q'] ?? '';
+    // ...
+}
+```
+
+## Flash messages
+
+Use the `FlashMessages` trait to pass feedback across redirects:
+
+```php
+use Slick\WebStack\Infrastructure\Http\FlashMessages;
+
+final class ArticleController
+{
+    use FlashMessages;
+
+    #[Route('/articles/{id}', methods: ['POST'])]
+    public function update(string $id, ServerRequestInterface $request): ResponseInterface
+    {
+        try {
+            $this->articles->update($id, $request->getParsedBody());
+            $this->success('Article updated.');
+        } catch (\Exception $e) {
+            $this->error("Could not update article: {$e->getMessage()}");
+        }
+
+        // redirect...
+    }
+}
+```
+
+In your Twig template:
+
+```twig
+{{ include("flash-messages.twig") }}
+```
+
+Available methods: `success()`, `info()`, `warning()`, `error()`.
+
+## Next steps
+
+- [Module system](/modules/) — how opt-in modules extend the framework
+- [Dependency injection](/dependency-injection/) — how the DI container works
+- [JSON API module](/modules/json-api/) — building a JSON:API compliant service

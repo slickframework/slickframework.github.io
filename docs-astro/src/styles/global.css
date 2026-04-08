@@ -1,0 +1,246 @@
+/*
+  Slick — Starlight theme overrides
+  Place at: docs-astro/src/styles/global.css
+  Referenced in astro.config.mjs → starlight({ customCss: [...] })
+*/
+
+/* ============================================================
+   COLOUR TOKENS
+   ============================================================ */
+
+:root,
+[data-theme='light'] {
+  /* Accent — indigo blue */
+  --sl-color-accent-low:    #EEF2FF;
+  --sl-color-accent:        #2B5CE6;
+  --sl-color-accent-high:   #1A3BB3;
+
+  /* Grays — slightly cool to match the indigo accent */
+  --sl-color-white:         #FFFFFF;
+  --sl-color-gray-1:        #F7F8FC;
+  --sl-color-gray-2:        #E2E6F0;
+  --sl-color-gray-3:        #B0BAD0;
+  --sl-color-gray-4:        #6B7A99;
+  --sl-color-gray-5:        #2E3A55;
+  --sl-color-gray-6:        #1A1F2E;
+  --sl-color-black:         #0F1117;
+
+  /* Text */
+  --sl-color-text:          #1A1A2E;
+  --sl-color-text-accent:   #2B5CE6;
+  --sl-color-text-invert:   #FFFFFF;
+}
+
+[data-theme='dark'] {
+  /* Accent */
+  --sl-color-accent-low:    #1A2544;
+  --sl-color-accent:        #7C9FFE;
+  --sl-color-accent-high:   #B8CFFE;
+
+  /* Grays */
+  --sl-color-white:         #0F1117;
+  --sl-color-gray-1:        #1A1F2E;
+  --sl-color-gray-2:        #222A3E;
+  --sl-color-gray-3:        #2E3A55;
+  --sl-color-gray-4:        #6B7A99;
+  --sl-color-gray-5:        #B0BAD0;
+  --sl-color-gray-6:        #E2E6F0;
+  --sl-color-black:         #F7F8FC;
+
+  /* Text */
+  --sl-color-text:          #E2E6F0;
+  --sl-color-text-accent:   #7C9FFE;
+  --sl-color-text-invert:   #0F1117;
+}
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+
+:root {
+  --sl-font:                system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sl-font-mono:           'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+
+  /* Heading weights — Starlight defaults to bold; we use medium */
+  --sl-text-h1:             2rem;
+  --sl-text-h2:             1.5rem;
+  --sl-text-h3:             1.125rem;
+  --sl-text-h4:             1rem;
+  --sl-text-body:           1rem;
+  --sl-text-body-sm:        0.875rem;
+  --sl-text-code:           0.875em;
+}
+
+/* Heading letter-spacing and weight */
+.sl-markdown-content h1 {
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.sl-markdown-content h2 {
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+.sl-markdown-content h3,
+.sl-markdown-content h4 {
+  font-weight: 500;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+/* Active item accent underline instead of background pill */
+.sl-markdown-content a,
+nav a[aria-current='page'] {
+  color: var(--sl-color-accent);
+}
+
+/* Sidebar section labels — uppercase tracking */
+.group-label span {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-4);
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+header.header {
+  border-bottom: 0.5px solid var(--sl-color-gray-2);
+  background: var(--sl-color-white);
+}
+
+[data-theme='dark'] header.header {
+  background: var(--sl-color-white); /* maps to #0F1117 in dark */
+  border-bottom-color: var(--sl-color-gray-2);
+}
+
+/* ============================================================
+   CODE BLOCKS
+   ============================================================
+   Always dark — regardless of page theme.
+   Starlight uses Expressive Code; these target the wrapper.
+*/
+
+.expressive-code {
+  --ec-brdRad:   8px;
+  --ec-frm-edTabBarBg:    #1A1F2E;
+  --ec-frm-edTabBarBrdBtmCol: #2E3A55;
+}
+
+/* Code block background — always dark */
+.expressive-code .frame pre,
+.expressive-code .frame code {
+  background: #0F1117 !important;
+  font-family: var(--sl-font-mono);
+  font-size: 0.875em;
+  line-height: 1.7;
+}
+
+/* Inline code */
+.sl-markdown-content code:not(pre code) {
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-accent-high);
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+  font-size: 0.875em;
+  font-family: var(--sl-font-mono);
+}
+
+[data-theme='dark'] .sl-markdown-content code:not(pre code) {
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-accent);
+}
+
+/* ============================================================
+   CONTENT WIDTH
+   ============================================================ */
+
+/* Slightly wider content column for code-heavy docs */
+.sl-markdown-content {
+  --sl-content-width: 54rem;
+}
+
+/* ============================================================
+   LINKS
+   ============================================================ */
+
+.sl-markdown-content a {
+  color: var(--sl-color-accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.sl-markdown-content a:hover {
+  color: var(--sl-color-accent-high);
+}
+
+[data-theme='dark'] .sl-markdown-content a:hover {
+  color: var(--sl-color-accent-high);
+}
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+
+.sl-markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.sl-markdown-content th {
+  background: var(--sl-color-gray-1);
+  font-weight: 500;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--sl-color-gray-2);
+}
+
+[data-theme='dark'] .sl-markdown-content th {
+  background: var(--sl-color-gray-2);
+}
+
+.sl-markdown-content td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 0.5px solid var(--sl-color-gray-2);
+  vertical-align: top;
+}
+
+/* ============================================================
+   ASIDES (note, tip, caution, danger)
+   ============================================================ */
+
+.starlight-aside--note {
+  border-left-color: var(--sl-color-accent);
+  background: var(--sl-color-accent-low);
+}
+
+/* ============================================================
+   FOOTER / PAGINATION
+   ============================================================ */
+
+.pagination-links a {
+  border-color: var(--sl-color-gray-2);
+  border-radius: 8px;
+}
+
+.pagination-links a:hover {
+  border-color: var(--sl-color-accent);
+}
+
+/* ============================================================
+   BADGE COMPONENT
+   ============================================================ */
+
+.sl-badge {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+}
