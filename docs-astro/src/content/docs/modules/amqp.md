@@ -1,475 +1,365 @@
 ---
 title: AMQP Messaging
-description: Integrate RabbitMQ with the Slick AMQP module for producers, consumers, and exchange types.
+description: Integrate RabbitMQ into Slick applications using producers and consumers for all four AMQP exchange types.
+sidebar:
+  order: 6
 ---
 
-# AMQP Messaging Module
+The `slick/amqp` module provides producers and consumers for RabbitMQ over the AMQP protocol. It supports all four exchange types — Fanout, Direct, Topic, and Headers — with a consistent abstract class API for each.
 
-## Introduction to the Slick AMQP Module
+## Installation
 
-The Slick AMQP module provides a seamless integration with Advanced Message Queuing Protocol (AMQP) brokers, such as RabbitMQ, allowing developers to easily create consumers and producers for various exchange types, including:
-
-* **Fanout**: broadcasting messages to all bound queues
-* **Direct**: routing messages to queues based on a routing key
-* **Headers**: routing messages to queues based on header attributes
-* **Topic**: routing messages to queues based on a routing key pattern
-
-Although this module is designed to integrate seamlessly with the Slick PHP framework, it can also be used as a standalone library in any PHP project.
-
-### AMQP: Messaging for Microservices
-
-The Advanced Message Queuing Protocol (AMQP) is a standardized messaging protocol that facilitates communication between different components of a distributed system. Producers send messages to a message broker (such as RabbitMQ), which routes the messages to the intended consumers.
-
-**Common use cases:**
-
-* **Microservices Architecture**: enable communication between services
-* **Background Tasks**: offload image processing, email sending, or data aggregation
-* **Real-time Data Processing**: stream real-time data between services
-* **IoT Messaging**: enable communication between IoT devices and the cloud
-
-## Install
-
-```shell
+```bash
 composer require slick/amqp
-```
-
-```shell
 bin/console enable amqp
 ```
 
-## AMQP Configuration
+## Configuration
 
-When you enable the module for the first time, a `config/modules/amqp.php` file is automatically generated. Configure the connection in your `.env` file:
+Add the connection settings to your `.env` file:
 
-- `AMQP_SERVER`: The AMQP broker's host (default: `localhost`)
-- `AMQP_PORT`: The port to connect to the broker (default: `5672`)
-- `AMQP_USER`: The username for broker authentication (default: `guest`)
-- `AMQP_PASSWORD`: The password for broker authentication (default: `guest`)
-
-## Basic Queue
-
-Sending and receiving messages through a queue is useful for image processing, email sending, data aggregation, and real-time updates.
-
-### Sending a Message
-
-```php
-<?php
-declare(strict_types=1);
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use Slick\Amqp\Message;
-use Slick\Amqp\Producer\BasicProducer;
-
-$connection = new AMQPStreamConnection('0.0.0.0', 5672, 'user', 'secret');
-$producer = new class($connection) extends BasicProducer {};
-
-$message = new Message('Hello World!!');
-$producer->publish($message, 'hello');
+```dotenv
+AMQP_SERVER=localhost
+AMQP_PORT=5672
+AMQP_USER=guest
+AMQP_PASSWORD=guest
 ```
 
-### Receiving a Message
+When running inside Slick, `AMQPStreamConnection` is registered in the DI container automatically. Inject it directly into your producers and consumers — no manual instantiation needed.
+
+## The Message class
+
+`Message` is the central value object for both sending and receiving. It wraps an AMQP message body with typed accessors for all standard AMQP properties.
 
 ```php
-<?php
-declare(strict_types=1);
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use Slick\Amqp\Consumer\BasicConsumer;
 use Slick\Amqp\Message;
 
-$connection = new AMQPStreamConnection('0.0.0.0', 5672, 'user', 'secret');
+// Create a message
+$message = new Message('Hello, world!');
 
-$consumer = new class($connection) extends BasicConsumer {
-    public function __construct($connection)
-    {
-        $this->queue = 'hello';
-        parent::__construct($connection);
-    }
-};
+// Create from a JsonSerializable DTO — content_type is set automatically
+$message = new Message($myDto);  // content_type: application/json
 
-$callback = function (Message $msg) {
-    echo ' [x] Received ', $msg->parsedBody(), "\n";
-};
-
-echo " [*] Waiting for messages. To exit press CTRL+C\n";
-$consumer->consume($callback);
+// Create from a Stringable object — content_type: text/plain
+$message = new Message($stringableObject);
 ```
 
-### Extending BasicProducer and BasicConsumer
+:::tip
+When the body implements `JsonSerializable`, the constructor serialises it to JSON and sets `content_type: application/json` automatically. You do not need to serialise manually.
+:::
 
-Extend the base classes to add custom functionality:
+### Reading message data
 
 ```php
-<?php
-declare(strict_types=1);
-
-use Slick\Amqp\Message;
-use Slick\Amqp\Producer\BasicProducer;
-
-class MyProducer extends BasicProducer
-{
-    public function publish(Message $message, string $queue): void
-    {
-        $message->set(Message::CONTENT_TYPE, 'application/json');
-        $message->set('priority', 1);
-        parent::publish($message, $queue);
-    }
-}
+$message->body();          // raw body (pre-parse)
+$message->parsedBody();    // decoded JSON or raw string
+$message->routingKey();    // routing key the broker used
+$message->exchange();      // exchange that routed this message
+$message->isRedelivered(); // true if the broker redelivered this message
+$message->deliveryTag();   // delivery tag (used by acknowledge())
+$message->channel();       // AMQPChannel this message arrived on
 ```
 
-## Work Queues
+### AMQP properties
 
-Work Queues (Task Queues) defer resource-intensive tasks by encapsulating them as messages and distributing them among multiple workers.
-
-### Sending Tasks
+Read and write any standard AMQP property using the `Message::*` constants:
 
 ```php
-<?php
-declare(strict_types=1);
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use Slick\Amqp\Message;
-use Slick\Amqp\Producer\BasicProducer;
-
-$connection = new AMQPStreamConnection('0.0.0.0', 5672, 'guest', 'guest');
-$producer = new class ($connection) extends BasicProducer {};
-
-$data = implode(' ', array_slice($argv, 1));
-if (empty($data)) {
-    $data = "Hello World!";
-}
-
-$message = new Message(
-    $data,
-    [Message::DELIVERY_MODE => Message::DELIVERY_MODE_PERSISTENT]
-);
-
-$producer->publish($message, 'task_queue');
-echo ' [x] Sent ', $data, "\n";
-```
-
-### Processing Tasks
-
-```php
-<?php
-declare(strict_types=1);
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use Slick\Amqp\Consumer\BasicConsumer;
 use Slick\Amqp\Message;
 
-$connection = new AMQPStreamConnection('0.0.0.0', 5672, 'guest', 'guest');
-$worker = new class($connection, 'task_queue') extends BasicConsumer {
-    public function __construct(AMQPStreamConnection $connection, string $name)
-    {
-        $this->queue = $name;
-        parent::__construct($connection);
-        $this->options[self::OPT_DURABLE] = true;
-        $this->consumeOptions[self::CONSUME_OPT_NO_ACK] = false;
-    }
+// Set properties
+$message = new Message($body, [
+    Message::DELIVERY_MODE => Message::DELIVERY_MODE_PERSISTENT,
+    Message::CONTENT_TYPE  => 'application/json',
+    Message::CORRELATION_ID => $correlationId,
+    Message::REPLY_TO       => 'reply-queue',
+    Message::MESSAGE_ID     => uniqid(),
+    Message::EXPIRATION     => '60000',  // milliseconds
+]);
 
-    protected function declareQueue(): void
-    {
-        parent::declareQueue();
-        $this->channel()->basic_qos(0, 1, null);
-    }
-};
-
-$callback = function (Message $message) use ($worker) {
-    echo ' [x] Received ', $message->parsedBody(), "\n";
-    sleep(substr_count($message->parsedBody(), '.'));
-    $worker->acknowledge($message);
-    echo " [x] Done\n";
-};
-
-$worker->consume($callback);
+// Read/write at runtime
+$message->get(Message::CORRELATION_ID);
+$message->set(Message::USER_ID, 'guest');
+$message->has(Message::REPLY_TO);
 ```
 
-## Publish/Subscribe
+Available constants: `DELIVERY_MODE`, `DELIVERY_MODE_PERSISTENT`, `DELIVERY_MODE_TRANSIENT`, `CONTENT_TYPE`, `CONTENT_ENCODING`, `TYPE`, `MESSAGE_ID`, `CORRELATION_ID`, `REPLY_TO`, `EXPIRATION`, `TIMESTAMP`, `USER_ID`, `APP_ID`, `HEADERS`.
 
-Publish/Subscribe messaging broadcasts messages to multiple subscribers through an exchange. Unlike simple queuing, multiple consumers receive the same message simultaneously.
-
-### Fanout Exchange
-
-Fanout exchanges broadcast messages to all queues bound to the exchange.
+### Message headers
 
 ```php
-<?php
-declare(strict_types=1);
+$message = (new Message($body))
+    ->withHeader('x-source', 'api')
+    ->withHeader('x-version', '2')
+    ->withHeaders(['x-tenant' => 'acme', 'x-locale' => 'pt'])
+;
 
-use PhpAmqpLib\Connection\AMQPStreamConnection;
+$message->headers();                    // all headers as array
+$message->withoutHeader('x-version');  // remove a single header
+```
+
+## Producers
+
+All producers extend `BasicProducer` and implement the `Producer` interface. The only method you call is `publish()`.
+
+### Default options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `OPT_PASSIVE` | `false` | Declare passively (do not create) |
+| `OPT_DURABLE` | `false` | Survive broker restart |
+| `OPT_AUTO_DELETE` | `true` | Delete when last consumer disconnects |
+| `OPT_INTERNAL` | `false` | Receive only from other exchanges, not producers |
+
+:::caution
+`OPT_AUTO_DELETE` defaults to `true`. Exchanges and queues are deleted when the last consumer disconnects unless you explicitly set it to `false`.
+:::
+
+### Fanout producer
+
+Broadcasts to all bound queues — no routing key needed.
+
+```php
 use Slick\Amqp\Producer\FanOutProducer;
 
-final class LogsProducer extends FanOutProducer
+final class NotificationsProducer extends FanOutProducer
 {
-    public function __construct(AMQPStreamConnection $connection, string $name)
+    protected string $exchange = 'notifications';
+
+    public function __construct(AMQPStreamConnection $connection)
     {
-        $this->exchange = $name;
+        $this->mergeOptions([
+            self::OPT_DURABLE     => true,
+            self::OPT_AUTO_DELETE => false,
+        ]);
         parent::__construct($connection);
     }
 }
+
+// Usage
+$producer->publish(new Message($event));
 ```
 
-```php
-<?php
-declare(strict_types=1);
+### Direct producer
 
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use Slick\Amqp\Consumer\FanOutConsumer;
-
-final class LogsConsumer extends FanOutConsumer
-{
-    public function __construct(AMQPStreamConnection $connection, string $name)
-    {
-        $this->exchange = $name;
-        parent::__construct($connection);
-        $this->options[self::OPT_EXCLUSIVE] = true;
-        $this->options[self::OPT_AUTO_DELETE] = false;
-    }
-}
-```
-
-**Producer usage:**
+Routes messages to queues bound with a matching routing key.
 
 ```php
-<?php
-declare(strict_types=1);
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use Slick\Amqp\Message;
-
-$connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
-$producer = new LogsProducer($connection, 'logs');
-
-$message = new Message('This is a log message!');
-$producer->publish($message);
-echo " [x] Sent: This is a log message!\n";
-```
-
-**Consumer usage** — call `bind()` before consuming:
-
-```php
-<?php
-declare(strict_types=1);
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-
-$connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
-$consumer = new LogsConsumer($connection, 'logs');
-
-$consumer->bind(); // Establish binding between exchange and queue
-
-$consumer->consume(function ($message) {
-    echo " [x] Received: {$message->parsedBody()}\n";
-});
-```
-
-### Direct Exchange
-
-Direct exchanges route messages to queues based on an exact match between the message's routing key and the binding key.
-
-```php
-<?php
-declare(strict_types=1);
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
 use Slick\Amqp\Producer\DirectProducer;
 
-final class LogsDirectProducer extends DirectProducer
+final class OrdersProducer extends DirectProducer
 {
-    public function __construct(AMQPStreamConnection $connection, string $name)
+    protected string $exchange = 'orders';
+
+    public function __construct(AMQPStreamConnection $connection)
     {
-        $this->exchange = $name;
+        $this->mergeOptions([self::OPT_DURABLE => true, self::OPT_AUTO_DELETE => false]);
         parent::__construct($connection);
-        $this->options[self::OPT_AUTO_DELETE] = false;
     }
 }
+
+// Usage
+$producer->publish(new Message($order), 'order.created');
 ```
 
-```php
-<?php
-declare(strict_types=1);
+### Topic producer
 
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use Slick\Amqp\Consumer\DirectConsumer;
-
-final class LogsDirectConsumer extends DirectConsumer
-{
-    public function __construct(AMQPStreamConnection $connection, string $name)
-    {
-        $this->exchange = $name;
-        parent::__construct($connection);
-        $this->exchangeOptions[self::OPT_AUTO_DELETE] = false;
-        $this->options[self::OPT_AUTO_DELETE] = false;
-        $this->options[self::OPT_EXCLUSIVE] = true;
-    }
-}
-```
-
-**Consumer usage** — call `bind($routingKey)` before consuming:
+Routes by pattern matching on the routing key. `*` matches one word, `#` matches zero or more words.
 
 ```php
-<?php
-declare(strict_types=1);
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-
-$connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
-$consumer = new LogsDirectConsumer($connection, 'direct_logs');
-
-$routingKey = $argv[1] ?? 'info';
-$consumer->bind($routingKey);
-
-$consumer->consume(function ($message) {
-    echo " [x] Received: {$message->parsedBody()}\n";
-});
-```
-
-### Topic Exchange
-
-Topic exchanges route messages based on wildcard matching of routing keys (`*` matches one word, `#` matches zero or more words).
-
-```php
-<?php
-declare(strict_types=1);
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use Slick\Amqp\Producer;
 use Slick\Amqp\Producer\TopicProducer;
 
-final class AnimalsProducer extends TopicProducer implements Producer
-{
-    public function __construct(AMQPStreamConnection $connection, string $name)
-    {
-        $this->exchange = $name;
-        parent::__construct($connection);
-        $this->mergeOptions([self::OPT_AUTO_DELETE => false]);
-    }
-}
+// TopicProducer is concrete — no need to extend it
+$producer = new TopicProducer($connection);
+$producer->publish(new Message($log), 'app.error.critical');
 ```
 
-```php
-<?php
-declare(strict_types=1);
+### Headers producer
 
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use Slick\Amqp\Consumer;
-use Slick\Amqp\Consumer\TopicConsumer;
-
-final class AnimalsConsumer extends TopicConsumer implements Consumer
-{
-    public function __construct(AMQPStreamConnection $connection, string $name)
-    {
-        $this->exchange = $name;
-        parent::__construct($connection);
-        $this->exchangeOptions[self::OPT_AUTO_DELETE] = false;
-        $this->mergeOptions([
-            self::OPT_AUTO_DELETE => false,
-            self::OPT_EXCLUSIVE => true,
-        ]);
-    }
-}
-```
-
-**Consumer usage** — bind with a pattern before consuming:
+Routes by message header values instead of routing keys.
 
 ```php
-<?php
-declare(strict_types=1);
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-
-$connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
-$consumer = new AnimalsConsumer($connection, 'animal_topics');
-
-$pattern = $argv[1] ?? 'animal.*';
-$consumer->bind($pattern);
-
-$consumer->consume(function ($message) {
-    echo " [x] Received: {$message->parsedBody()}\n";
-});
-```
-
-### Header Exchange
-
-Header exchanges route messages based on key-value pairs in message headers.
-
-```php
-<?php
-declare(strict_types=1);
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use Slick\Amqp\Producer;
 use Slick\Amqp\Producer\HeadersProducer;
 
-final class NotificationsProducer extends HeadersProducer implements Producer
+final class AuditProducer extends HeadersProducer
 {
-    public function __construct(AMQPStreamConnection $connection, string $exchangeName)
-    {
-        $this->exchange = $exchangeName;
-        parent::__construct($connection);
-    }
+    protected string $exchange = 'audit';
 }
-```
 
-```php
-<?php
-declare(strict_types=1);
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use Slick\Amqp\Consumer;
-use Slick\Amqp\Consumer\HeadersConsumer;
-
-final class NotificationsConsumer extends HeadersConsumer implements Consumer
-{
-    public function __construct(AMQPStreamConnection $connection, string $exchangeName)
-    {
-        $this->exchange = $exchangeName;
-        parent::__construct($connection);
-    }
-}
-```
-
-**Publishing with headers:**
-
-```php
-<?php
-declare(strict_types=1);
-
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use Slick\Amqp\Message;
-
-$connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
-$producer = new NotificationsProducer($connection, 'notifications_headers');
-
-$message = (new Message("High-priority email for US region"))
-    ->withHeaders([
-        'type' => 'email',
-        'priority' => 'high',
-        'region' => 'US',
-    ]);
-
+// Usage
+$message = (new Message($event))
+    ->withHeader('type', 'login')
+    ->withHeader('region', 'eu')
+;
 $producer->publish($message);
 ```
 
-**Consuming with header bindings** — use `bindHeaders()` with `"all"` (all headers must match) or `"any"` (any header can match):
+## Consumers
+
+All consumers extend `BasicConsumer` and implement the `Consumer` interface. The core methods are `bind()` and `consume()`.
+
+### Default options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `OPT_PASSIVE` | `false` | Declare passively |
+| `OPT_DURABLE` | `false` | Survive broker restart |
+| `OPT_EXCLUSIVE` | `false` | Exclusive to this connection |
+| `OPT_AUTO_DELETE` | `true` | Delete when consumer disconnects |
+| `CONSUME_OPT_NO_ACK` | `true` | Auto-acknowledge messages |
+
+### Fanout consumer
 
 ```php
-<?php
-declare(strict_types=1);
+use Slick\Amqp\Consumer\FanOutConsumer;
 
-use PhpAmqpLib\Connection\AMQPStreamConnection;
+final class NotificationsConsumer extends FanOutConsumer
+{
+    protected string $exchange = 'notifications';
+    protected string $queue    = 'notifications.handler';
 
-$connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
-$consumer = new NotificationsConsumer($connection, 'notifications_headers');
+    public function __construct(AMQPStreamConnection $connection)
+    {
+        $this->mergeOptions([
+            self::OPT_DURABLE     => true,
+            self::OPT_AUTO_DELETE => false,
+        ]);
+        parent::__construct($connection);
+    }
+}
 
-$consumer->bindHeaders([
-    'type' => 'email',
-    'priority' => 'high',
-    'region' => 'US',
-], 'all');
-
-$consumer->consume(function ($message) {
-    echo " [x] Received: {$message->parsedBody()}\n";
+$consumer->bind();
+$consumer->consume(function (Message $message) use ($consumer) {
+    // handle message
+    $consumer->acknowledge($message);
 });
 ```
+
+### Direct consumer
+
+Bind with the routing key to filter messages.
+
+```php
+use Slick\Amqp\Consumer\DirectConsumer;
+
+final class OrderCreatedConsumer extends DirectConsumer
+{
+    protected string $exchange = 'orders';
+    protected string $queue    = 'orders.created';
+}
+
+$consumer->bind('order.created');
+$consumer->consume(function (Message $message) use ($consumer) {
+    $consumer->acknowledge($message);
+});
+```
+
+### Topic consumer
+
+Bind with a pattern — `*` matches one word, `#` matches zero or more.
+
+```php
+use Slick\Amqp\Consumer\TopicConsumer;
+
+final class ErrorLogConsumer extends TopicConsumer
+{
+    protected string $exchange = 'logs';
+    protected string $queue    = 'logs.errors';
+}
+
+$consumer->bind('app.error.#');   // matches app.error, app.error.critical, etc.
+$consumer->consume(function (Message $message) use ($consumer) {
+    $key = $message->routingKey(); // inspect which key triggered this
+    $consumer->acknowledge($message);
+});
+```
+
+### Headers consumer
+
+Bind by header values. Use `HeadersConsumer::X_MATCH_ALL` (all headers must match) or `HeadersConsumer::X_MATCH_ANY` (any header must match).
+
+```php
+use Slick\Amqp\Consumer\HeadersConsumer;
+
+final class EuLoginConsumer extends HeadersConsumer
+{
+    protected string $exchange = 'audit';
+    protected string $queue    = 'audit.eu.login';
+}
+
+$consumer->bindHeaders(
+    ['type' => 'login', 'region' => 'eu'],
+    HeadersConsumer::X_MATCH_ALL   // default — all headers must match
+);
+
+$consumer->consume(function (Message $message) use ($consumer) {
+    $consumer->acknowledge($message);
+});
+```
+
+## Manual acknowledgement
+
+By default, `CONSUME_OPT_NO_ACK` is `true` — messages are acknowledged automatically. For reliable processing, disable auto-ack and acknowledge explicitly:
+
+```php
+final class ReliableConsumer extends DirectConsumer
+{
+    protected string $exchange = 'orders';
+    protected string $queue    = 'orders.reliable';
+
+    public function __construct(AMQPStreamConnection $connection)
+    {
+        $this->mergeOptions([
+            self::OPT_DURABLE          => true,
+            self::OPT_AUTO_DELETE      => false,
+            self::CONSUME_OPT_NO_ACK   => false,  // require manual ack
+        ]);
+        parent::__construct($connection);
+    }
+}
+
+$consumer->bind('order.created');
+$consumer->consume(function (Message $message) use ($consumer) {
+    try {
+        $this->handler->handle($message->parsedBody());
+        $consumer->acknowledge($message);
+    } catch (\Throwable $e) {
+        // do not acknowledge — broker will redeliver
+    }
+});
+```
+
+:::tip
+Always call `mergeOptions()` **before** `parent::__construct()`. The parent constructor calls `mergeOptions()` internally to lock in defaults — options set after construction are applied only because exchange/queue declaration is deferred, but the ordering dependency is not guaranteed across versions.
+:::
+
+## Consumer interface reference
+
+```php
+// Queue declaration options
+$consumer->isPassive(): bool
+$consumer->isDurable(): bool
+$consumer->isExclusive(): bool
+$consumer->isAutoDelete(): bool
+$consumer->options(): array
+$consumer->exchangeOptions(): array
+
+// Binding and consuming
+$consumer->bind(?string $routingKey = ''): mixed  // null = no routing key
+$consumer->consume(callable $callable, array $options = []): void
+$consumer->acknowledge(Message $message): void
+```
+
+The second parameter of `consume()` accepts per-call option overrides for the consume operation.
+
+## Producer interface reference
+
+```php
+$producer->publish(Message $message, ?string $routingKey = ''): void
+$producer->isPassive(): bool
+$producer->isDurable(): bool
+$producer->isAutoDelete(): bool
+$producer->options(): array
+```
+
+Producer type constants (for reference): `Producer::TYPE_DIRECT`, `TYPE_FANOUT`, `TYPE_TOPIC`, `TYPE_HEADERS`, `TYPE_DEFAULT`.
