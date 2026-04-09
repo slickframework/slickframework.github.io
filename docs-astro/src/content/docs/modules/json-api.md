@@ -1,355 +1,402 @@
 ---
 title: JSON API
-description: Implement the JSON:API 1.1 specification in Slick using the slick/json-api module.
+description: Build JSON:API 1.1 compliant services with automatic request parsing, resource encoding, and structured error responses.
+sidebar:
+  order: 5
 ---
 
-# JSON API Module
-
-The `slick/json-api` library implements the JSON:API 1.1 specification as a Slick module. It supports content negotiation, error handling, pagination, and resource operations (fetching, creating, updating, and deleting).
-
-## What's {json:api}
-
-The [JSON:API specification](https://jsonapi.org/) defines a consistent structure for API requests and responses. Key features include resource-based data modeling, standardized error handling, and support for pagination, filtering, sorting, and relationship management.
+The `slick/json-api` module implements the [JSON:API 1.1 specification](https://jsonapi.org/format/1.1). It handles content negotiation, resource encoding and decoding, structured error responses, and sparse fieldsets — integrated as a Slick module with automatic middleware registration.
 
 ## Installation
 
-```shell
+```bash
 composer require slick/json-api
-```
-
-```shell
 bin/console enable json-api
 ```
 
-## Document Encoder
+Enabling the module registers two things automatically: the `JsonApiParserMiddleware` in the HTTP stack and the encoder/decoder services in the DI container.
 
-The `DocumentEncoder` interface converts data into a valid JSON:API response.
+## How it works
 
-### Creating an Encoder
+Every incoming request with `Content-Type: application/vnd.api+json` is automatically parsed by `JsonApiParserMiddleware` before it reaches your controller. The parsed document is available via the DI container as a `Document` instance.
+
+Outgoing responses are built by encoding your domain objects through `DocumentEncoder`, which maps them to valid JSON:API output using PHP attribute annotations or custom schema classes.
+
+## Encoding responses
+
+### Creating an encoder
 
 ```php
-<?php
-declare(strict_types=1);
-
 use Slick\JSONAPI\Document\Converter\PHPJson;
 use Slick\JSONAPI\Document\Encoder\DefaultEncoder;
 use Slick\JSONAPI\Document\Factory\DefaultFactory;
+use Slick\JSONAPI\JsonApi;
 use Slick\JSONAPI\Object\SchemaDiscover\AttributeSchemaDiscover;
 
-$discover = new AttributeSchemaDiscover();
-$factory = new DefaultFactory($discover);
+$discover  = new AttributeSchemaDiscover();
+$factory   = new DefaultFactory($discover);
 $converter = new PHPJson();
 
 $encoder = new DefaultEncoder($discover, $factory, $converter);
 ```
 
-Configure and encode data:
+When the module is enabled, `DefaultEncoder` is wired into the container — you can inject `DocumentEncoder` directly into your controllers.
+
+### Encoder options
 
 ```php
-<?php
-declare(strict_types=1);
-
-use Slick\JSONAPI\JsonApi;
-use Slick\JSONAPI\Object\Links;
-
 $encoder
-    ->withJsonapi(new JsonApi(JsonApi::JSON_API_11))
-    ->withLinkPrefix("https://example.com")
+    ->withJsonapi(new JsonApi(JsonApi::JSON_API_11))   // set spec version
+    ->withLinkPrefix('https://example.com')            // prefix all links
+    ->withMeta(new Meta(['count' => 42]))               // document-level meta
+    ->withLinks(new Links([...]))                       // document-level links
+    ->withDocumentMeta(new Meta([...]))                 // meta on the data block
+    ->withDocumentLinks(new Links([...]))               // links on the data block
+    ->withSparseFields($sparseFields)                  // field filtering
 ;
 
+echo $encoder->encode($resource);
+```
+
+### Encoding from arrays
+
+The simplest approach — mirror the JSON:API structure with array keys:
+
+```php
 echo $encoder->encode([
-    "type" => "index",
-    "meta" => ["description" => "Sample page"],
-    "links" => [Links::LINK_SELF => '/api'],
+    'type'       => 'articles',
+    'id'         => 42,
+    'attributes' => [
+        'title' => 'My article',
+        'body'  => 'Lorem ipsum...',
+    ],
 ]);
 ```
 
-Response:
+## Mapping objects with attributes
 
-```json
-{
-    "jsonapi": { "version": "1.1" },
-    "data": {
-        "type": "index",
-        "id": null,
-        "links": { "self": "https://example.com/api" },
-        "meta": { "description": "Sample page" }
-    }
-}
-```
+Annotate your classes with PHP 8 attributes and the encoder handles the rest.
 
-### Array Data
+### `#[AsResourceObject]`
 
-The simplest way to encode data is using arrays that mirror the JSON:API structure:
+Marks a class as a JSON:API resource. All parameters are optional.
 
 ```php
-<?php
-declare(strict_types=1);
-
-$post = [
-    "type" => "posts",
-    "id" => 34,
-    "attributes" => [
-        "title" => "Example post",
-        "body" => "Lorem ipsum dolor sit amet...",
-    ],
-];
-
-echo $encoder->encode($post);
-```
-
-## Mapping with Attributes
-
-Map objects to JSON:API output using PHP attributes.
-
-### #[AsResourceObject]
-
-Marks a class as a JSON:API resource:
-
-```php
-<?php
-declare(strict_types=1);
-
 use Slick\JSONAPI\Object\SchemaDiscover\Attributes\AsResourceObject;
 
-#[AsResourceObject(type: "users")]
-class User
+#[AsResourceObject(
+    type: 'articles',
+    isCompound: true,        // include related resources in `included`
+    generateIdentifier: true // generate an id if none is present
+)]
+class Article
 {
     // ...
 }
 ```
 
-**Properties:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `type` | `?string` | `null` | Resource type. Can also be set via `#[ResourceIdentifier]` |
+| `meta` | `array\|string\|null` | `null` | Meta for the data block. String = method name |
+| `links` | `array\|string\|null` | `null` | Links for the data block. String = method name |
+| `schemaClass` | `?string` | `null` | Use a custom `ResourceSchema` class instead of attribute scanning |
+| `isCompound` | `bool` | `false` | Add an `included` section with related resources |
+| `generateIdentifier` | `bool` | `true` | Generate an id when none is present |
+| `documentMeta` | `array\|string\|null` | `null` | Meta for the document root |
+| `documentLinks` | `array\|string\|null` | `null` | Links for the document root |
 
-| Property             | Description                                                                                 |
-|----------------------|---------------------------------------------------------------------------------------------|
-| `type`               | The document's data type. Optional if set via `ResourceIdentifier`.                         |
-| `meta`               | Meta information for the data section. Optional.                                            |
-| `links`              | Key/URL pairs for the data block. Optional.                                                 |
-| `isCompound`         | If `true`, adds an `included` section with related resources. Defaults to `false`.          |
-| `generateIdentifier` | If `true`, generates an identifier when data lacks one. Defaults to `false`.                |
-| `documentMeta`       | Meta information for the document's meta block. Optional.                                   |
-| `documentLinks`      | Links for the document's links block. Optional.                                             |
+### `#[ResourceIdentifier]`
 
-### #[ResourceIdentifier]
-
-Designates a property as the resource identifier:
-
-| Property    | Description                                                                                    |
-|-------------|------------------------------------------------------------------------------------------------|
-| `type`      | The resource type (typically plural entity name).                                              |
-| `className` | A fully qualified class name instantiated with the identifier value.                           |
-| `required`  | If `true`, returns an error when converting a document without this identifier. Default: `false`. |
-
-### #[ResourceAttribute]
-
-Marks a property as part of the `attributes` section:
-
-| Property    | Description                                                                                                  |
-|-------------|--------------------------------------------------------------------------------------------------------------|
-| `name`      | Attribute name. Defaults to the property name.                                                               |
-| `className` | A fully qualified class name instantiated with the attribute value.                                          |
-| `required`  | If `true`, returns an error when converting a document without this attribute. Default: `false`.             |
-| `factory`   | A static method to generate this property using the attribute value.                                         |
-| `getter`    | A getter method called instead of directly accessing the property value.                                     |
-| `format`    | If the value has a `format()` method, calls `class::format()` with this argument to retrieve the value.     |
-
-### #[RelationshipIdentifier]
-
-Used when a resource document holds a relationship identifier:
+Designates a property as the resource id.
 
 ```php
-<?php
-declare(strict_types=1);
+#[ResourceIdentifier(type: 'articles', required: true)]
+private string $articleId;
+```
 
-use Slick\JSONAPI\Object\SchemaDiscover\Attributes\AsResourceObject;
-use Slick\JSONAPI\Object\SchemaDiscover\Attributes\RelationshipIdentifier;
-use Slick\JSONAPI\Object\SchemaDiscover\Attributes\ResourceIdentifier;
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `type` | `?string` | `null` | Resource type |
+| `className` | `?string` | `null` | Class to instantiate when decoding |
+| `required` | `bool` | `false` | Fail validation if absent |
 
-#[AsResourceObject()]
-class ChangeUserGroupCommand
+### `#[ResourceAttribute]`
+
+Maps a property to the `attributes` section.
+
+```php
+#[ResourceAttribute(name: 'published-at', format: 'Y-m-d')]
+private DateTimeImmutable $publishedAt;
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | `?string` | property name | Attribute name in the JSON output |
+| `className` | `?string` | `null` | Class or enum to instantiate when decoding |
+| `required` | `bool` | `false` | Fail validation if absent |
+| `factory` | `?string` | `null` | Static method to call when decoding |
+| `getter` | `?string` | `null` | Method to call instead of reading the property directly |
+| `format` | `?string` | `null` | Calls `$value->format($format)` on encoding |
+
+### `#[Relationship]`
+
+Maps a property to the `relationships` section.
+
+```php
+#[Relationship(type: Relationship::TO_ONE, name: 'author')]
+private Author $author;
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `type` | `string` | `TO_ONE` | `Relationship::TO_ONE` or `Relationship::TO_MANY` |
+| `name` | `?string` | property name | Relationship name in the JSON output |
+| `links` | `?array` | `null` | Links for this relationship |
+| `meta` | `?array` | `null` | Meta for this relationship |
+
+### `#[AsResourceCollection]`
+
+Marks a class as a collection of resources. The class must implement `IteratorAggregate` or another iterable interface.
+
+```php
+#[AsResourceCollection]
+class ArticleCollection implements IteratorAggregate
 {
-    #[ResourceIdentifier(type: "users", required: true)]
-    private string $userId;
-
-    #[RelationshipIdentifier(name: "group", required: true, type: "groups")]
-    private string $groupId;
-
-    // constructor and methods...
+    // each item must have its own #[AsResourceObject]
 }
 ```
 
-Expected request body:
+## Decoding requests
 
-```json
-{
-    "data": {
-        "type": "users",
-        "id": "3233",
-        "relationships": {
-            "group": {
-                "data": { "type": "groups", "id": "21" }
-            }
-        }
-    }
-}
-```
-
-**Properties:**
-
-| Property    | Description                                                                                                  |
-|-------------|--------------------------------------------------------------------------------------------------------------|
-| `name`      | The relationship name. Defaults to the property name.                                                        |
-| `className` | A fully qualified class name instantiated with the relationship identifier value.                            |
-| `type`      | The relationship data type. The document type must match if set.                                             |
-| `required`  | If `true`, returns an error when the attribute is missing. Default: `false`.                                 |
-
-### #[AsResourceCollection]
-
-Marks a class as a collection of resources. The class must implement `IteratorAggregate` or another PHP iterable interface. Each object in the iterable must have a schema attribute like `AsResourceObject`.
-
-## Document Decoder
-
-Decode a JSON:API resource document into an object using attributes mapping.
-
-### Creating a Decoder
+### Creating a decoder
 
 ```php
-<?php
-declare(strict_types=1);
-
 use Slick\JSONAPI\Document\Decoder\DefaultDecoder;
 use Slick\JSONAPI\Object\SchemaDiscover\AttributeSchemaDiscover;
 use Slick\JSONAPI\Validator\SchemaValidator;
 
 $discover = new AttributeSchemaDiscover();
 $validator = new SchemaValidator();
-
 $decoder = new DefaultDecoder($discover, $validator);
 ```
 
-### Decoding a Request
+### `#[RelationshipIdentifier]`
 
-Given this DTO:
+Maps a relationship in an incoming document to a property.
 
 ```php
-<?php
-declare(strict_types=1);
-
-use Slick\JSONAPI\Object\SchemaDiscover\Attributes\AsResourceObject;
-use Slick\JSONAPI\Object\SchemaDiscover\Attributes\RelationshipIdentifier;
-use Slick\JSONAPI\Object\SchemaDiscover\Attributes\ResourceIdentifier;
-
-#[AsResourceObject()]
+#[AsResourceObject]
 final readonly class ChangeUserGroupCommand
 {
     public function __construct(
-        #[ResourceIdentifier(type: "users", required: true)]
+        #[ResourceIdentifier(type: 'users', required: true)]
         private string $userId,
-        #[RelationshipIdentifier(name: "group", required: true, type: "groups")]
+
+        #[RelationshipIdentifier(name: 'group', type: 'groups', required: true)]
         private string $groupId,
     ) {}
-
-    public function userId(): string { return $this->userId; }
-    public function groupId(): string { return $this->groupId; }
 }
 ```
 
-Parse a PSR-7 request and decode it:
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | `string` | — | Relationship name in the document |
+| `className` | `?string` | `null` | Class to instantiate with the relationship id |
+| `type` | `?string` | `null` | Expected relationship type |
+| `required` | `bool` | `false` | Fail validation if absent |
+
+### Decoding an incoming request
 
 ```php
-<?php
-declare(strict_types=1);
-
-use Slick\Http\Message\Server\Request;
 use Slick\JSONAPI\Document\HttpMessageParser;
 
-$request = new Request();
-$parser = new HttpMessageParser();
+$parser   = new HttpMessageParser();
+$document = $parser->parse($request);          // PSR-7 ServerRequestInterface
 
-$document = $parser->parse($request);
 $decoder->setRequestedDocument($document);
-
 $command = $decoder->decodeTo(ChangeUserGroupCommand::class);
 ```
 
-The `Content-Type` header must be `application/vnd.api+json` for the message to be correctly parsed.
+The request `Content-Type` must be `application/vnd.api+json`.
 
-## Custom Schema Class
+## Custom schema classes
 
-For full control over encoding and decoding, create a custom `ResourceSchema` class:
-
-```php
-<?php
-declare(strict_types=1);
-
-namespace App\Domain;
-
-use Slick\JSONAPI\Object\SchemaDiscover\Attributes\AsResourceObject;
-use App\Infrastructure\JsonApi\UserSchema;
-
-#[AsResourceObject(schemaClass: UserSchema::class)]
-class User
-{
-    // User properties and methods...
-}
-```
+When you need more control than PHP attributes allow, implement `ResourceSchema` directly or extend `AbstractResourceSchema`:
 
 ```php
-<?php
-declare(strict_types=1);
-
-namespace App\Infrastructure\JsonApi;
-
-use App\Domain\User;
 use Slick\JSONAPI\Object\AbstractResourceSchema;
 use Slick\JSONAPI\Object\ResourceSchema;
 
-final class UserSchema extends AbstractResourceSchema implements ResourceSchema
+final class ArticleSchema extends AbstractResourceSchema implements ResourceSchema
 {
     public function type($object): string
     {
-        return "users";
+        return 'articles';
     }
 
-    public function isCompound(): bool
-    {
-        return true;
-    }
-
-    /** @param User $object */
     public function identifier($object): ?string
     {
-        return (string) $object->accountId();
+        return (string) $object->articleId();
     }
 
-    /**
-     * @param User $object
-     * @return array<string, mixed>|null
-     */
     public function attributes($object): ?array
     {
         return [
-            "name" => $object->name(),
+            'title'        => $object->title(),
+            'published-at' => $object->publishedAt()->format('Y-m-d'),
         ];
     }
 
-    /**
-     * @param User $object
-     * @return array<string, mixed>|null
-     */
     public function relationships($object): ?array
     {
         return [
-            "group" => [
-                "data" => $object->group(),
-                "links" => ['related' => true],
-            ],
+            'author' => ['data' => $object->author()],
         ];
     }
+
+    public function links($object): ?array { return null; }
+    public function meta($object): ?array  { return null; }
 }
 ```
 
-## Conclusion
+Wire the schema to the class via `schemaClass`:
 
-The `slick/json-api` module offers a robust implementation of the JSON:API 1.1 specification with support for content negotiation, error handling, pagination, and resource management. Use array-based encoding for simple cases, PHP attributes for automatic mapping, or custom schema classes for full control over complex resource structures.
+```php
+#[AsResourceObject(schemaClass: ArticleSchema::class)]
+class Article { ... }
+```
+
+`AbstractResourceSchema` also provides a `from()` method for decoding and a `validate()` hook.
+
+## Error responses
+
+The module provides a structured API for building JSON:API error documents.
+
+```php
+use Slick\JSONAPI\Object\ErrorObject;
+use Slick\JSONAPI\Object\ErrorObject\ErrorSource;
+use Slick\JSONAPI\Document\ErrorDocument;
+use Slick\JSONAPI\Object\ResourceCollection;
+
+$error = new ErrorObject(
+    title:  'Validation failed',
+    detail: 'The email field is required.',
+    status: '422',
+    source: new ErrorSource(pointer: '/data/attributes/email'),
+);
+
+$error = $error
+    ->withCode('VALIDATION_001')
+    ->withIdentifier('err-abc123')
+;
+
+$errorDocument = new ErrorDocument(
+    new ResourceCollection([$error])
+);
+
+echo $encoder->encode($errorDocument);
+```
+
+`ErrorSource` accepts `pointer` (a JSON Pointer to the offending field) or `parameter` (a query parameter name).
+
+### Automatic error handling
+
+`JsonApiErrorHandler` converts unhandled exceptions into JSON:API error responses automatically. It is registered in the HTTP stack when the module is enabled — you do not need to wire it manually.
+
+## Sparse fieldsets
+
+The `SparseFields` class implements the JSON:API [sparse fieldsets](https://jsonapi.org/format/#fetching-sparse-fieldsets) feature. It reads `fields[type]` query parameters from the request and filters which attributes are included in the response.
+
+```php
+use Slick\JSONAPI\Document\Factory\SparseFields;
+
+$sparseFields = new SparseFields($request);  // reads ?fields[articles]=title,body
+
+$sparseFields->hasFields();                          // bool
+$sparseFields->fieldsFor('articles');                // ['title', 'body'] or null
+$sparseFields->filterFields('articles', $allFields); // returns only requested fields
+$sparseFields->includeResource('articles');          // bool
+$sparseFields->includeField('title', 'articles');    // bool
+```
+
+Pass it to the encoder:
+
+```php
+$encoder->withSparseFields($sparseFields)->encode($resource);
+```
+
+## Document types
+
+The encoder produces different document shapes depending on what you pass to `encode()`:
+
+| Input | Output document type |
+|-------|----------------------|
+| Object with `#[AsResourceObject]` | `ResourceDocument` |
+| Object with `#[AsResourceObject]` + `isCompound: true` | `ResourceCompoundDocument` (includes `included`) |
+| Array with only `meta` key | `MetaDocument` |
+| `ErrorDocument` instance | Error document with `errors` array |
+
+### Paginated list example
+
+A common pattern — a collection with pagination meta and navigation links:
+
+```php
+use Slick\JSONAPI\Object\Links;
+use Slick\JSONAPI\Object\Meta;
+
+echo $encoder
+    ->withMeta(new Meta([
+        'total'   => 248,
+        'page'    => 3,
+        'perPage' => 25,
+    ]))
+    ->withLinks(new Links([
+        Links::LINK_SELF  => '/api/articles?page=3',
+        Links::LINK_FIRST => '/api/articles?page=1',
+        Links::LINK_PREV  => '/api/articles?page=2',
+        Links::LINK_NEXT  => '/api/articles?page=4',
+        Links::LINK_LAST  => '/api/articles?page=10',
+    ]))
+    ->encode($articleCollection)
+;
+```
+
+This produces:
+
+```json
+{
+  "jsonapi": { "version": "1.1" },
+  "meta": { "total": 248, "page": 3, "perPage": 25 },
+  "links": {
+    "self":  "/api/articles?page=3",
+    "first": "/api/articles?page=1",
+    "prev":  "/api/articles?page=2",
+    "next":  "/api/articles?page=4",
+    "last":  "/api/articles?page=10"
+  },
+  "data": [ ... ]
+}
+```
+
+:::tip
+To also filter which fields are returned, chain `withSparseFields()` — see [Sparse fieldsets](#sparse-fieldsets).
+:::
+
+## Exception reference
+
+All exceptions are in the `Slick\JSONAPI\Exception` namespace:
+
+| Exception | When thrown |
+|-----------|-------------|
+| `FailedValidation` | Schema validation failed on decode |
+| `InvalidResourceDocument` | Document structure is invalid |
+| `InvalidMemberName` | A member name violates JSON:API naming rules |
+| `InvalidResourceProperty` | A resource property is invalid |
+| `DocumentEncoderFailure` | Encoder could not produce output |
+| `InvalidObjectCreation` | Object could not be instantiated during decode |
+| `SpecificationViolation` | A JSON:API spec rule was violated |
+| `UnsupportedJsonApiVersion` | Document uses an unsupported spec version |
+| `UnsupportedFeature` | A requested feature is not implemented |
+| `MissingDependency` | A required service is not available |
+| `UnknownValidator` | An unknown validator was requested |
